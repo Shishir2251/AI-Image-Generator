@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator Test</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+        .container { display: flex; flex-direction: column; gap: 1rem; }
+        .controls { display: flex; flex-direction: column; gap: 10px; border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:disabled { background-color: #ccc; }
+        #result-container { margin-top: 20px; text-align: center; }
+        img { max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .loading { display: none; color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h1>AI Photo + Text Generator</h1>
+
+    <div class="container">
+        <div class="controls">
+            <label><strong>1. Upload an Image:</strong></label>
+            <input type="file" id="imageInput" accept="image/*">
+
+            <label><strong>2. Enter a Prompt:</strong></label>
+            <input type="text" id="promptInput" placeholder="e.g., Turn this sketch into a realistic building" style="padding: 8px;">
+
+            <button onclick="generateImage()" id="genBtn">Generate Image</button>
+        </div>
+
+        <p id="statusText" class="loading">Generating... this might take 10-30 seconds...</p>
+        
+        <div id="result-container">
+            </div>
+    </div>
+
+    <script>
+        async function generateImage() {
+            const fileInput = document.getElementById('imageInput');
+            const promptInput = document.getElementById('promptInput');
+            const resultContainer = document.getElementById('result-container');
+            const statusText = document.getElementById('statusText');
+            const btn = document.getElementById('genBtn');
+
+            if (!fileInput.files[0] || !promptInput.value) {
+                alert("Please select a file and enter a prompt!");
+                return;
+            }
+
+            // Prepare the data
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('prompt', promptInput.value);
+
+            // UI Updates
+            btn.disabled = true;
+            statusText.style.display = 'block';
+            resultContainer.innerHTML = '';
+
+            try {
+                // CALL YOUR API
+                const response = await fetch('http://127.0.0.1:8000/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error ${response.status}: ${errorText}`);
+                }
+
+                // Convert response to image blob
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+
+                // Display Image
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                resultContainer.appendChild(img);
+            } catch (err) {
+                alert("Failed: " + err.message);
+            } finally {
+                btn.disabled = false;
+                statusText.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
